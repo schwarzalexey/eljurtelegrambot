@@ -34,24 +34,25 @@ def getInfo(subdomain, session: Session):
     return info
 
 
-def getJournal(subdomain, session: Session):
-    url = f"https://{subdomain}.eljur.ru/journal-app"
+def getJournal(subdomain, session: Session, week=0):
+    url = f"https://{subdomain}.eljur.ru/journal-app/week.{week * -1}"
 
     soup = createSoup(subdomain, url, session)
     if "error" in soup:
         return soup
 
     info = {}
+    i = 1
     for day in soup.find_all("div", class_="dnevnik-day"):
         title = day.find("div", class_="dnevnik-day__title")
         week, date = title.contents[0].strip().replace("\n", "").split(", ")
 
         if day.find("div", class_="page-empty"):
-            info.update([(week, {"date": date, "isEmpty": True, "comment": "Нет уроков", "lessons": {}})])
+            info.update({'day': week, "date": date, "isEmpty": True, "comment": "Нет уроков", "lessons": {}})
             continue
 
         if day.find("div", class_="dnevnik-day__holiday"):
-            info.update([(week, {"date": date, "isEmpty": True, "comment": "Выходной", "lessons": {}})])
+            info.update({'day': week, "date": date, "isEmpty": True, "comment": "Выходной", "lessons": {}})
             continue
 
         lessons = day.find_all("div", class_="dnevnik-lesson")
@@ -61,6 +62,8 @@ def getJournal(subdomain, session: Session):
                 lessonNumber = lesson.find("div", class_="dnevnik-lesson__number")
                 if lessonNumber:
                     lessonNumber = lessonNumber.contents[0].replace("\n", "").strip()[:-1]
+                if lessonNumber == '':
+                    continue
 
                 lessonName = lesson.find("span", class_="js-rt_licey-dnevnik-subject").contents[0]
 
@@ -75,7 +78,7 @@ def getJournal(subdomain, session: Session):
                 lessonsDict.update([(lessonNumber, {"name": lessonName,
                                                     "hometask": lessonHomeTask,
                                                     "mark": lessonMark})])
-
-            info.update([(week, {"date": date, "isEmpty": False, "comment": "Выходной", "lessons": lessonsDict})])
+            info.update({str(i): {'day': week, "date": date, "isEmpty": False, "comment": "Выходной", "lessons": lessonsDict}})
+            i += 1
 
     return info
