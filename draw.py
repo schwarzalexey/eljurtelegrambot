@@ -1,31 +1,175 @@
 from PIL import Image, ImageDraw, ImageFont
 
+global semibold_font
+global regular_font
 
-def draw(data, user_id):
-    max_len_lesson = max([len(f"{x}. {y['name']}") * 7 for x, y in data['lessons'].items()])
-    max_len_hw = max([len(data['lessons'][str(i)]['hometask'] if data['lessons'][str(i)]['hometask'] is not None else '') * 7 for i in range(1, (len(data['lessons'])+1))])
+semibold_font = ImageFont.truetype("Inter-SemiBold.ttf", 18)
+regular_font = ImageFont.truetype("Inter-Regular.ttf", 14)
+
+
+def toFixed(numObj, digits=0):
+    return f"{numObj:.{digits}f}"
+
+
+def drawJournal(data, user_id):
+    max_len_lesson = max(
+        [len(f"{x}. {y['name']}") * 7 for x, y in data["lessons"].items()]
+    )
+    max_len_hw = max(
+        [
+            len(
+                data["lessons"][str(i)]["hometask"]
+                if data["lessons"][str(i)]["hometask"] is not None
+                else ""
+            )
+            * 7
+            for i in range(1, (len(data["lessons"]) + 1))
+        ]
+    )
     max_len = max_len_hw + max_len_lesson + 120
-    image = Image.new("RGB", (max_len, 50*(len(data['lessons'])+1)), (255, 255, 255))
+    image = Image.new(
+        "RGB", (max_len, 50 * (len(data["lessons"]) + 1)), (255, 255, 255)
+    )
     draw = ImageDraw.Draw(image)
-    semibold_font = ImageFont.truetype('Inter-SemiBold.ttf', 18)
-    regular_font = ImageFont.truetype('Inter-Regular.ttf', 14)
-    draw.text((10, 14), f"{data['day']}, {data['date']}", fill=(0,0,0), font=semibold_font)
-    ht_logo = Image.open('ht.png').convert("RGBA").resize((20, 20))
-    for x, y in data['lessons'].items():
-        x = x if x != '' else '-1'
+    draw.text(
+        (10, 14), f"{data['day']}, {data['date']}", fill=(0, 0, 0), font=semibold_font
+    )
+    ht_logo = Image.open("ht.png").convert("RGBA").resize((20, 20))
+    for x, y in data["lessons"].items():
+        x = x if x != "" else "-1"
         if int(x) % 2:
-            draw.rectangle([(0, 50*int(x)), (max_len, 50*int(x) + 50)], fill=(230, 230, 230), outline=(230, 230, 230))
-        draw.text((10, 16 + 50*int(x)), f"{x}. {y['name']}", fill=(0, 0, 0), font=regular_font)
-        image.paste(ht_logo, (max_len_lesson+25, 15+50*int(x)), ht_logo)
-        if y['hometask'] is None:
-            y['hometask'] = 'Нет'
-        draw.text((max_len_lesson+50, 16 + 50 * int(x)), y['hometask'], fill=(0, 0, 0), font=regular_font)
-        if y['mark'] is not None:
-            mark = y['mark'] if y['mark'] != '' else 'Н'
-            draw.rounded_rectangle([(max_len_lesson+max_len_hw+75, 10 + 50*int(x)), (max_len_lesson+max_len_hw+105, 40 + 50*int(x))], radius=10, outline=(150,150,150), width=1)
-            draw.text((max_len_lesson+max_len_hw+85, 16 + 50*int(x)), mark, fill=(0, 0, 0), font=regular_font)
-    image.save(f'day_{user_id}.jpg', quality=95)
+            draw.rectangle(
+                [(0, 50 * int(x)), (max_len, 50 * int(x) + 50)],
+                fill=(230, 230, 230),
+                outline=(230, 230, 230),
+            )
+        draw.text(
+            (10, 16 + 50 * int(x)),
+            f"{x}. {y['name']}",
+            fill=(0, 0, 0),
+            font=regular_font,
+        )
+        image.paste(ht_logo, (max_len_lesson + 25, 15 + 50 * int(x)), ht_logo)
+        if y["hometask"] is None:
+            y["hometask"] = "Нет"
+        draw.text(
+            (max_len_lesson + 50, 16 + 50 * int(x)),
+            y["hometask"],
+            fill=(0, 0, 0),
+            font=regular_font,
+        )
+        if y["mark"] is not None:
+            mark = y["mark"] if y["mark"] != "" else "Н"
+            draw.rounded_rectangle(
+                [(max_len - 45, 10 + 50 * int(x)), (max_len - 15, 40 + 50 * int(x))],
+                radius=10,
+                outline=(150, 150, 150),
+                width=1,
+            )
+            draw.text(
+                (max_len_lesson + max_len_hw + 85, 16 + 50 * int(x)),
+                mark,
+                fill=(0, 0, 0),
+                font=regular_font,
+            )
+    image.save(f"day_{user_id}.jpg", quality=95)
 
 
+def drawGradeList(data, user_id):
+    if data["themes"] is None:
+        return False
+    data = data["themes"]
 
+    max_lesson_length = (
+        int(regular_font.getlength(max(list(data.keys()), key=lambda x: len(x)))) + 15
+    )
+    max_x = (
+        max_lesson_length
+        + 25 * len(list(data.values())[0])
+        + int(regular_font.getlength("Средняя"))
+    ) + 25
+    image = Image.new("RGB", (max_x, 25 * len(data) + 50), (255, 255, 255))
+    draw = ImageDraw.Draw(image)
+    draw.text((10, 20), "Предмет", fill=(0, 0, 0), font=semibold_font)
+    draw.text(
+        (max_x - 10 - int(regular_font.getlength("Средняя")), 25),
+        "Средняя",
+        fill=(250, 50, 50),
+        font=regular_font,
+    )
 
+    multiplied_font = ImageFont.truetype("Inter-Regular.ttf", 10)
+
+    avg_data = {}
+
+    for lesson, marks in data.items():
+        avg_sum, count = 0, 0
+        for mark in marks:
+            if not mark["isMark"]:
+                continue
+            multiplier = 1
+            if "x" in mark["mark"]:
+                multiplier = int(mark["mark"].split("x")[1])
+            avg_sum += int(mark["mark"].split("x")[0]) * multiplier
+            count += multiplier
+        result = str(toFixed(avg_sum / count, 2)) if count else ""
+        avg_data.update({lesson: result})
+
+    i = 0
+    for lesson, marks in data.items():
+        if i % 2:
+            draw.rectangle(
+                [(0, 25 * i + 50), (max_x, 25 * i + 25 + 50)],
+                fill=(230, 230, 230),
+                outline=(230, 230, 230),
+            )
+        draw.text((10, 5 + 25 * i + 50), lesson, fill=(0, 0, 0), font=regular_font)
+        draw.line([(0, 25 * i + 50), (max_x, 25 * i + 50)], fill=(150, 150, 150))
+
+        j = 0
+        for mark in marks:
+            x = max_lesson_length + 25 * j + 5
+            draw.line([(x, 0), (x, (25 * (len(data)) + 5) + 50)], fill=(150, 150, 150))
+            if mark["mark"] is None:
+                j += 1
+                continue
+            if "x" not in mark["mark"]:
+                draw.text(
+                    (max_lesson_length + 25 * j + 13, 5 + 25 * i + 50),
+                    mark["mark"],
+                    fill=(0, 0, 0),
+                    font=regular_font,
+                )
+            else:
+                draw.text(
+                    (max_lesson_length + 25 * j + 9, 7 + 25 * i + 50),
+                    mark["mark"],
+                    fill=(0, 0, 0)
+                    if mark["mark"].split("x")[0] == "Н"
+                    else (70, 70, 255),
+                    font=multiplied_font,
+                )
+            j += 1
+
+        x = max_lesson_length + 25 * j + 5
+
+        draw.line([(x, 0), (x, (25 * (len(data)) + 5) + 50)], fill=(150, 150, 150))
+        i += 1
+
+    i = 0
+    for lesson, mark in avg_data.items():
+        length = int(regular_font.getlength(mark))
+        draw.text(
+            (
+                max_x
+                - length
+                - (20 + int(regular_font.getlength("Средняя")) - length) // 2,
+                5 + 25 * i + 50,
+            ),
+            mark,
+            fill=(0, 0, 0),
+            font=regular_font,
+        )
+        i += 1
+
+    image.save(f"gl_{user_id}.jpg", quality=95)
