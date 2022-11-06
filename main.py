@@ -8,10 +8,8 @@ import asyncio
 from time import sleep
 
 bot = TeleBot("5739731982:AAGctJkddQ3ua_b9LmnCuW7H2vP9IEdSMsA")
-conn = sqlite3.connect("db.db3", check_same_thread=False)
+conn = sqlite3.connect("database/db.db3", check_same_thread=False)
 cursor = conn.cursor()
-global STARTED
-STARTED = 0
 
 # async def checkNewestGrades(user_id):
 #     oldGradeListFile = open(f'C:\\Users\\retys\\PycharmProjects\\pythonProject1\\gradelists\\{user_id}.txt', 'r+')
@@ -49,15 +47,7 @@ STARTED = 0
 #     await bot.send_message(getChatID(user_id), text)
 
 
-
 def authFromDB(user_id):
-    # global STARTED
-    # if not STARTED:
-    #     loop = asyncio.new_event_loop()
-    #     asyncio.set_event_loop(loop)
-    #     asyncio.ensure_future(checkNewestGrades(user_id))
-    #     loop.run_forever()
-    #     STARTED = 1
     data = getMainData(user_id)
     subd, data = data[0], {"username": data[1], "password": data[2]}
     result = auth(subd, data)
@@ -112,6 +102,7 @@ def getMainData(user_id):
         cursor.execute(f"SELECT login FROM db WHERE user_id='{user_id}'").fetchone()[0],
         cursor.execute(f"SELECT password FROM db WHERE user_id='{user_id}'").fetchone()[0],
     ]
+
 
 def getChatID(user_id):
     return cursor.execute(f"SELECT chat_id FROM db WHERE user_id='{user_id}'").fetchone()[0]
@@ -236,18 +227,11 @@ def getJournal_Main(call):
     markup.add(types.InlineKeyboardButton("Вернуться назад", callback_data="go_back"))
     if call.data[-1] != "j":
         bot.delete_message(chat_id, call.message.json["message_id"])
-        bot.edit_message_text(
-            f"Текущая неделя - c {start_date} по {end_date}.\nВыберите день или переключите неделю",
-            chat_id=chat_id,
-            message_id=message_id,
-            reply_markup=markup,
-        )
-    else:
-        bot.send_message(
-            chat_id,
-            f"Текущая неделя - c {start_date} по {end_date}.\nВыберите день или переключите неделю",
-            reply_markup=markup,
-        )
+    bot.send_message(
+        chat_id,
+        f"Текущая неделя - c {start_date} по {end_date}.\nВыберите день или переключите неделю",
+        reply_markup=markup,
+    )
 
 
 @bot.callback_query_handler(func=lambda call: call.data[:14] == "getjournalday_")
@@ -277,7 +261,7 @@ def getJournal_Day(call):
     bot.send_photo(
         chat_id,
         types.InputFile(
-            f"C:\\Users\\retys\\PycharmProjects\\pythonProject1\\day_{user_id}.jpg"
+            f"journalLists\day_{user_id}.jpg"
         ),
         reply_markup=markup,
     )
@@ -323,7 +307,7 @@ def getGradeList_Main(call):
         bot.send_photo(
             chat_id,
             types.InputFile(
-                f"C:\\Users\\retys\\PycharmProjects\\pythonProject1\\gl_{user_id}.jpg"
+                f"gradeLists_out\gl_{user_id}.jpg"
             ),
             reply_markup=markup,
         )
@@ -367,6 +351,7 @@ def authFinal(msg):
 
         bot.send_message(msg.chat.id, "Авторизация прошла удачно.")
     startMsg(msg)
+
 
 if __name__ == '__main__':
     bot.polling(none_stop=True)

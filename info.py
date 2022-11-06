@@ -23,15 +23,15 @@ def getInfo(subdomain, session: Session):
     label = None
     info = {}
     for tag in soup.find_all(["label", "span"], class_=["ej-form-label", "control-label"]):
-        if tag.contents[0] == "СНИЛС":
+        if tag.contents[0].strip() == "СНИЛС":
             break
 
         if tag.name == "label":
-            label = tag.contents[0]
+            label = tag.contents[0].strip()
             info.update([(label, None)])
 
         if tag.name == "span":
-            info[label] = tag.contents[0]
+            info[label] = tag.contents[0].strip()
 
     return info
 
@@ -128,10 +128,10 @@ def getJournal(subdomain, session: Session, week=0):
 
 
 def getGradeList(subdomain, session: Session, quarter=1):
-    url = f"https://{subdomain}.eljur.ru/journal-student-grades-action/u.0/sp.{roman[quarter]}+четверть"
-
     if quarter == 'latest':
         url = f"https://{subdomain}.eljur.ru/journal-student-grades-action/u.0/"
+    else:
+        url = f"https://{subdomain}.eljur.ru/journal-student-grades-action/u.0/sp.{roman[quarter]}+четверть"
 
     soup = createSoup(subdomain, url, session)
     if "error" in soup:

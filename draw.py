@@ -3,8 +3,8 @@ from PIL import Image, ImageDraw, ImageFont
 global semibold_font
 global regular_font
 
-semibold_font = ImageFont.truetype("Inter-SemiBold.ttf", 18)
-regular_font = ImageFont.truetype("Inter-Regular.ttf", 14)
+semibold_font = ImageFont.truetype("fonts/Inter-SemiBold.ttf", 18)
+regular_font = ImageFont.truetype("fonts/Inter-Regular.ttf", 14)
 
 
 def toFixed(numObj, digits=0):
@@ -34,7 +34,7 @@ def drawJournal(data, user_id):
     draw.text(
         (10, 14), f"{data['day']}, {data['date']}", fill=(0, 0, 0), font=semibold_font
     )
-    ht_logo = Image.open("ht.png").convert("RGBA").resize((20, 20))
+    ht_logo = Image.open("fonts/ht.png").convert("RGBA").resize((20, 20))
     for x, y in data["lessons"].items():
         x = x if x != "" else "-1"
         if int(x) % 2:
@@ -72,7 +72,7 @@ def drawJournal(data, user_id):
                 fill=(0, 0, 0),
                 font=regular_font,
             )
-    image.save(f"day_{user_id}.jpg", quality=95)
+    image.save(f"journalLists/day_{user_id}.jpg", quality=95)
 
 
 def drawGradeList(data, user_id):
@@ -83,22 +83,23 @@ def drawGradeList(data, user_id):
     max_lesson_length = (
         int(regular_font.getlength(max(list(data.keys()), key=lambda x: len(x)))) + 15
     )
-    max_x = (
-        max_lesson_length
-        + 25 * len(list(data.values())[0])
-        + int(regular_font.getlength("Средняя"))
-    ) + 25
+    max_x = (max_lesson_length + 25 * len(list(data.values())[0]) + int(semibold_font.getlength("Средняя"))) + 25
     image = Image.new("RGB", (max_x, 25 * len(data) + 50), (255, 255, 255))
     draw = ImageDraw.Draw(image)
+    draw.rectangle(
+        [(0, 0), (max_x, 50)],
+        fill=(230, 230, 230),
+        outline=(230, 230, 230),
+    )
     draw.text((10, 20), "Предмет", fill=(0, 0, 0), font=semibold_font)
     draw.text(
-        (max_x - 10 - int(regular_font.getlength("Средняя")), 25),
+        (max_x - 10 - int(semibold_font.getlength("Средняя")), 20),
         "Средняя",
-        fill=(250, 50, 50),
-        font=regular_font,
+        fill=(0, 0, 0),
+        font=semibold_font,
     )
 
-    multiplied_font = ImageFont.truetype("Inter-Regular.ttf", 10)
+    multiplied_font = ImageFont.truetype("fonts/Inter-Regular.ttf", 10)
 
     avg_data = {}
 
@@ -117,14 +118,15 @@ def drawGradeList(data, user_id):
 
     i = 0
     for lesson, marks in data.items():
+        y = 25 * i + 50
         if i % 2:
             draw.rectangle(
-                [(0, 25 * i + 50), (max_x, 25 * i + 25 + 50)],
+                [(0, y), (max_x, y + 25)],
                 fill=(230, 230, 230),
                 outline=(230, 230, 230),
             )
-        draw.text((10, 5 + 25 * i + 50), lesson, fill=(0, 0, 0), font=regular_font)
-        draw.line([(0, 25 * i + 50), (max_x, 25 * i + 50)], fill=(150, 150, 150))
+        draw.text((10, 4 + y), lesson, fill=(0, 0, 0), font=regular_font)
+        draw.line([(0, y), (max_x, y)], fill=(150, 150, 150))
 
         j = 0
         for mark in marks:
@@ -135,18 +137,16 @@ def drawGradeList(data, user_id):
                 continue
             if "x" not in mark["mark"]:
                 draw.text(
-                    (max_lesson_length + 25 * j + 13, 5 + 25 * i + 50),
+                    (max_lesson_length + 25 * j + 13, 4 + y),
                     mark["mark"],
                     fill=(0, 0, 0),
                     font=regular_font,
                 )
             else:
                 draw.text(
-                    (max_lesson_length + 25 * j + 9, 7 + 25 * i + 50),
+                    (max_lesson_length + 25 * j + 9, 7 + y),
                     mark["mark"],
-                    fill=(0, 0, 0)
-                    if mark["mark"].split("x")[0] == "Н"
-                    else (70, 70, 255),
+                    fill=(0, 0, 0) if mark["mark"].split("x")[0] == "Н" else (70, 70, 255),
                     font=multiplied_font,
                 )
             j += 1
@@ -161,10 +161,8 @@ def drawGradeList(data, user_id):
         length = int(regular_font.getlength(mark))
         draw.text(
             (
-                max_x
-                - length
-                - (20 + int(regular_font.getlength("Средняя")) - length) // 2,
-                5 + 25 * i + 50,
+                max_x - length - (20 + int(semibold_font.getlength("Средняя")) - length) // 2,
+                4 + 25 * i + 50,
             ),
             mark,
             fill=(0, 0, 0),
@@ -172,4 +170,4 @@ def drawGradeList(data, user_id):
         )
         i += 1
 
-    image.save(f"gl_{user_id}.jpg", quality=95)
+    image.save(f"gradeLists_out/gl_{user_id}.jpg", quality=95)
