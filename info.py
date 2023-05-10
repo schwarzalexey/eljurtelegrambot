@@ -22,16 +22,18 @@ def getInfo(subdomain, session: Session):
 
     label = None
     info = {}
-    for tag in soup.find_all(["label", "span"], class_=["ej-form-label", "control-label"]):
-        if tag.contents[0].strip() == "СНИЛС":
-            break
+    for tag in soup.find_all(["label", "input"], class_=["ej-form-label", "field field--fill"]):
+        print(tag.contents)
+        if tag.contents:
+            if tag.contents[0].strip() in ("СНИЛС", "Пол"):
+                break
 
         if tag.name == "label":
             label = tag.contents[0].strip()
             info.update([(label, None)])
 
-        if tag.name == "span":
-            info[label] = tag.contents[0].strip()
+        if tag.name == "input":
+            info[label] = tag["value"]
 
     return info
 

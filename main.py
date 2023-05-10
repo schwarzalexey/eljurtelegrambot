@@ -11,40 +11,41 @@ bot = TeleBot("5739731982:AAGctJkddQ3ua_b9LmnCuW7H2vP9IEdSMsA")
 conn = sqlite3.connect("database/db.db3", check_same_thread=False)
 cursor = conn.cursor()
 
-# async def checkNewestGrades(user_id):
-#     oldGradeListFile = open(f'C:\\Users\\retys\\PycharmProjects\\pythonProject1\\gradelists\\{user_id}.txt', 'r+')
-#     subDomain = getMainData(user_id)[0]
-#     if oldGradeListFile.readlines() == []:
-#         session = authFromDB(user_id)
-#         if session is None:
-#             return
-#         gradeList = getGradeList(subDomain, session['session'], 'latest')['themes']
-#         oldGradeListFile.write(gradeList)
-#         del gradeList
-#         del session
-#     oldGradeListFile.close()
-#     await time.sleep(600)
-#     newSession = authFromDB(user_id)
-#     if newSession is None:
-#         return
-#     oldGradeList = open(f'C:\\Users\\retys\\PycharmProjects\\pythonProject1\\gradelists\\{user_id}.txt', 'r').read()
-#     newGradeList = getGradeList(subDomain, new_session['session'], 'latest')['themes']
-#     text = 'Появились новые оценки:\n'
-#     for lesson, marks in newGradeList.items():
-#         while {"mark": None, "date": None, "isMark": False} in marks:
-#             marks.remove({"mark": None, "date": None, "isMark": False})
-#         while {"mark": None, "date": None, "isMark": False} in oldGradeList[lesson]:
-#             oldGradeList[lesson].remove({"mark": None, "date": None, "isMark": False})
-#         change = []
-#         for mark in marks:
-#             if mark not in oldGradeList[lesson]:
-#                 change.append(mark)
-#         if change == []:
-#             continue
-#         change = [f'{mark["mark"]} за {mark["date"]}' for mark in change]
-#         text += f"{lesson}: {', '.join(change)}\n"
-#     oldGradeListFile.write(getGradeList(subDomain, new_session['session'], 'latest')['themes'])
-#     await bot.send_message(getChatID(user_id), text)
+
+def checkNewestGrades(user_id):
+    oldGradeListFile = open(f'C:\\Users\\retys\\PycharmProjects\\pythonProject1\\gradelists\\{user_id}.txt', 'r+')
+    subDomain = getMainData(user_id)[0]
+    if oldGradeListFile.readlines() == []:
+        session = authFromDB(user_id)
+        if session is None:
+            return
+        gradeList = getGradeList(subDomain, session['session'], 'latest')['themes']
+        oldGradeListFile.write(gradeList)
+        del gradeList
+        del session
+    oldGradeListFile.close()
+    await asyncio.sleep(600)
+    newSession = authFromDB(user_id)
+    if newSession is None:
+        return
+    oldGradeList = open(f'C:\\Users\\retys\\PycharmProjects\\pythonProject1\\gradelists\\{user_id}.txt', 'r').read()
+    newGradeList = getGradeList(subDomain, newSession['session'], 'latest')['themes']
+    text = 'Появились новые оценки:\n'
+    for lesson, marks in newGradeList.items():
+        while {"mark": None, "date": None, "isMark": False} in marks:
+            marks.remove({"mark": None, "date": None, "isMark": False})
+        while {"mark": None, "date": None, "isMark": False} in oldGradeList[lesson]:
+            oldGradeList[lesson].remove({"mark": None, "date": None, "isMark": False})
+        change = []
+        for mark in marks:
+            if mark not in oldGradeList[lesson]:
+                change.append(mark)
+        if not change:
+            continue
+        change = [f'{mark["mark"]} за {mark["date"]}' for mark in change]
+        text += f"{lesson}: {', '.join(change)}\n"
+    oldGradeListFile.write(getGradeList(subDomain, newSession['session'], 'latest')['themes'])
+    await bot.send_message(getChatID(user_id), text)
 
 
 def authFromDB(user_id):
@@ -73,11 +74,6 @@ def pushDB(uid: int, username: str, subd: str, log: str, password: str, chat_id:
 
 def markupMainMenu():
     markup = types.InlineKeyboardMarkup()
-    markup.add(
-        types.InlineKeyboardButton(
-            "Получить информацию о себе", callback_data="getinfo"
-        )
-    )
     markup.add(
         types.InlineKeyboardButton(
             "Получить расписание на неделю", callback_data="getjournal_0"
@@ -152,22 +148,7 @@ def startMsg(msg):
             bot.send_message(chat_id, text, reply_markup=markupMainMenu())
 
 
-@bot.callback_query_handler(func=lambda call: call.data == "getinfo")
-def getInfo_Main(call):
-    message_id = call.message.json["message_id"]
-    chat_id = call.message.chat.id
-    user_id = call.message.json["chat"]["id"]
-    data = getMainData(user_id)
-    session = authFromDB(user_id)
-    if session is None:
-        return
-    info = getInfo(data[0], session["session"])
-    text = ";\n".join(f"{x}: {y}" for x, y in info.items())
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("Вернуться назад", callback_data="go_back"))
-    bot.edit_message_text(
-        text, chat_id=chat_id, message_id=message_id, reply_markup=markup
-    )
+
 
 
 @bot.callback_query_handler(func=lambda call: call.data[:11] == "getjournal_")
